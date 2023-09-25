@@ -4,13 +4,14 @@
 
 - <b>PowerShell</b>
 
-  - [Windows EventLog: Failed RDP Logins Source IP to full GeoData Conversion](https://github.com/joshmadakor1/Sentinel-Lab](https://github.com/Digital-cyber/Digital-cyber/blob/main/SecurityLogExporter.ps1)
-  - [JWipe (Disk Wiping Utility)](https://github.com/joshmadakor1/Jwipe.PowerShell](https://github.com/Digital-cyber/Digital-cyber/blob/main/JWipe.ps1)
-  - [Active Directory Bulk User Creation](https://github.com/joshmadakor1/AD_PS](https://github.com/Digital-cyber/Digital-cyber/blob/main/NameGenerator.ps1)
+  - [Windows EventLog: Failed RDP Logins Source IP to full GeoData Conversion](https://github.com/Digital-cyber/Digital-cyber/blob/main/SecurityLogExporter.ps1)
+  - [JWipe (Disk Wiping Utility)](https://github.com/Digital-cyber/Digital-cyber/blob/main/JWipe.ps1)
+  - [Active Directory Bulk User Creation](https://github.com/Digital-cyber/Digital-cyber/blob/main/NameGenerator.ps1)
   - [FIM (File Integrity Monitor)](https://github.com/Digital-cyber/Digital-cyber/blob/main/FileIntegrity.ps1)
 
 - <b>Python</b>
   - [Machine Learning Email Scanner](https://github.com/Digital-cyber/EmailScanner/blob/main/EmailScanner.py)
+  - Honeypot in Python 
   
 
 <h2> 🤳 Connect with me:</h2>
