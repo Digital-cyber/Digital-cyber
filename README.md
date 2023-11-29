@@ -10,8 +10,10 @@
   - [FIM (File Integrity Monitor)](https://github.com/Digital-cyber/Digital-cyber/blob/main/FileIntegrity.ps1)
 
 - <b>Python</b>
+
+  - [Automation Tools](https://github.com/Digital-cyber/Automation/blob/main/Automation.py)
   - [Machine Learning Email Scanner](https://github.com/Digital-cyber/EmailScanner/blob/main/EmailScanner.py)
-  - Honeypot in Python 
+  - [Honeypot in Python]
   
 
 <h2> 🤳 Connect with me:</h2>
