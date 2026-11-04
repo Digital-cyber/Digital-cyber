@@ -104,9 +104,12 @@ Internal pull-ups mean each button just shorts a pin to GND — no resistors.
 | File | Role |
 |------|------|
 | `boot.py` | Chooses USB identity at boot (default KEYBOARD). |
-| `code.py` | Main loop: multi-key typing + mode toggle. |
+| `code.py` | Main loop: multi-key typing + mode toggle + status LED. |
 | `keys.txt` | One credential per line. **Edit this.** |
 | `lib/README.txt` | Where `adafruit_hid` goes. |
+
+Status LED (pin `D6`, external): **solid = keyboard, blinking = drive**. Onboard
+LEDs mirror it for bench use. For enclosed builds see [`../hardware/`](../hardware/).
 
 ## Sources
 
