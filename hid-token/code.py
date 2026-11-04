@@ -1,16 +1,19 @@
 """
-code.py - main loop. Runs in BOTH modes (HID is simply absent in DRIVE mode).
+code.py - main loop. Quick-and-dirty multi-key typer for lab deployment.
 
-  PASSWORD button (D1): in KEYBOARD mode, types the secret from /secret.txt.
-                        does nothing in DRIVE mode (no HID available).
-  MODE button (D0):     flips the persisted mode byte and soft-resets, so the
-                        device re-enumerates as the other identity (~1-2s).
-                        This is the "live" toggle - works from either mode.
+  KEY buttons (D1, D2, D3): each types the matching line from /keys.txt
+                            (D1 -> line 1, D2 -> line 2, D3 -> line 3).
+                            Only active in KEYBOARD mode.
+  MODE button (D0):         flips identity (KEYBOARD <-> DRIVE) and soft-resets
+                            so you can mount the drive and edit keys.txt.
 
-Required library in /lib:  adafruit_hid  (from the CircuitPython library bundle)
+Add more keys: wire another button and append its pin to KEY_PINS below;
+it maps to the next line of keys.txt automatically.
 
-Security note: /secret.txt is plaintext. In KEYBOARD mode the drive is hidden
-from the host, but anyone who can dump the flash can read it. See README.md.
+Required library in /lib:  adafruit_hid  (CircuitPython library bundle)
+
+Security note: /keys.txt is plaintext (no secure element on a bare RP2040).
+Fine for lab creds; don't put anything you'd cry over on it. See README.md.
 """
 
 import time
@@ -22,25 +25,36 @@ MODE_KEYBOARD = 1
 MODE_DRIVE = 0
 
 DEBOUNCE_S = 0.03
-PRESS_ENTER_AFTER_PASSWORD = False  # set True to hit Enter after typing
+PRESS_ENTER_AFTER_KEY = False   # set True to auto-submit after typing each key
+
+# Buttons that fire keys, in order. KEY_PINS[i] -> keys.txt line (i+1).
+KEY_PIN_NAMES = ("D1", "D2", "D3")
 
 
-def load_secret():
-    """Read the secret, stripping trailing newline(s). Empty string on failure."""
+def load_keys():
+    """Return keys.txt as a list of lines (newline-stripped). [] on failure."""
     try:
-        with open("/secret.txt", "r") as f:
-            return f.read().rstrip("\r\n")
+        with open("/keys.txt", "r") as f:
+            return [ln.rstrip("\r\n") for ln in f.readlines()]
     except OSError:
-        return ""
+        return []
 
 
-# --- buttons (internal pull-ups; pressed = reads False) ---
+# --- MODE button ---
 mode_btn = digitalio.DigitalInOut(board.D0)
 mode_btn.switch_to_input(pull=digitalio.Pull.UP)
-pass_btn = digitalio.DigitalInOut(board.D1)
-pass_btn.switch_to_input(pull=digitalio.Pull.UP)
 
-# --- try to bring up HID; absent in DRIVE mode ---
+# --- KEY buttons ---
+key_btns = []
+for name in KEY_PIN_NAMES:
+    pin = getattr(board, name, None)
+    if pin is None:
+        continue
+    b = digitalio.DigitalInOut(pin)
+    b.switch_to_input(pull=digitalio.Pull.UP)
+    key_btns.append(b)
+
+# --- bring up HID (absent in DRIVE mode) ---
 kbd = None
 layout = None
 try:
@@ -53,11 +67,10 @@ try:
         kbd = Keyboard(usb_hid.devices)
         layout = KeyboardLayoutUS(kbd)
 except Exception:
-    kbd = None  # DRIVE mode, or HID not ready
+    kbd = None
 
 
 def pressed(btn):
-    """Debounced edge check."""
     if not btn.value:
         time.sleep(DEBOUNCE_S)
         if not btn.value:
@@ -71,24 +84,26 @@ def wait_release(btn):
 
 
 def switch_mode():
-    microcontroller.nvm[0] = microcontroller.nvm[0] ^ 1  # flip stored mode
+    microcontroller.nvm[0] = microcontroller.nvm[0] ^ 1
     time.sleep(0.05)
-    microcontroller.reset()                              # re-enumerate
+    microcontroller.reset()
 
 
 while True:
-    # Mode toggle works in either identity.
+    # Drop to / return from editable drive.
     if pressed(mode_btn):
         wait_release(mode_btn)
         switch_mode()
 
-    # Typing only when HID is live.
-    if kbd and pressed(pass_btn):
-        secret = load_secret()
-        if secret:
-            layout.write(secret)
-            if PRESS_ENTER_AFTER_PASSWORD:
-                kbd.send(Keycode.ENTER)
-        wait_release(pass_btn)  # no auto-repeat while held
+    # Fire a key.
+    if kbd:
+        for i, b in enumerate(key_btns):
+            if pressed(b):
+                keys = load_keys()
+                if i < len(keys) and keys[i]:
+                    layout.write(keys[i])
+                    if PRESS_ENTER_AFTER_KEY:
+                        kbd.send(Keycode.ENTER)
+                wait_release(b)
 
     time.sleep(0.02)

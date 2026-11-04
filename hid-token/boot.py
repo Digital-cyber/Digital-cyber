@@ -1,25 +1,22 @@
 """
 boot.py - runs ONCE at power-on / reset, BEFORE USB enumerates.
 
-This is the only place where the device's USB identity can be chosen,
-because the host decides what the device "is" (keyboard vs. drive) during
-enumeration. We read a single persisted byte from microcontroller NVM to
-decide which identity to present this boot.
+USB identity is chosen here (it can only be set at enumeration). A single
+persisted NVM byte decides the identity this boot:
 
   NVM byte 0:
-      1 = KEYBOARD mode  -> HID keyboard, CIRCUITPY drive hidden
-      0 = DRIVE mode     -> plain USB mass-storage, no HID
+      1 (or unset) = KEYBOARD mode  -> HID keyboard, CIRCUITPY drive hidden
+      0            = DRIVE mode      -> plain USB mass-storage, for editing keys
 
-Live toggle: code.py flips this byte and calls microcontroller.reset(),
-which re-runs boot.py and re-enumerates as the other device. NVM is used
-(not a file) because in DRIVE mode the host owns the filesystem and the
-firmware cannot write to it.
+RAPID-DEPLOY DEFAULT: a freshly flashed board boots straight into KEYBOARD
+mode, so it's "keys in hand" the moment it's plugged in. You only drop to
+DRIVE mode (MODE button) when you want to edit keys.txt.
 
-Manual override: hold the MODE button during power-on to flip the stored
-mode (useful if you ever get stuck in one identity).
+Manual override: hold the MODE button during power-on to flip the stored mode
+(handy if you ever get stuck in one identity).
 
 Board: Seeed Studio XIAO RP2040 | CircuitPython 8.x / 9.x
-Pins:  MODE button -> D0 -> GND     PASSWORD button -> D1 -> GND
+Pins:  MODE -> D0   KEY1 -> D1   KEY2 -> D2   KEY3 -> D3   (all to GND)
 """
 
 import board
@@ -32,10 +29,10 @@ import microcontroller
 MODE_KEYBOARD = 1
 MODE_DRIVE = 0
 
-# --- read persisted mode (survives reset/power loss) ---
+# --- read persisted mode; default to KEYBOARD for rapid deploy ---
 mode = microcontroller.nvm[0]
 if mode not in (MODE_KEYBOARD, MODE_DRIVE):
-    mode = MODE_DRIVE  # first-ever boot: behave like a normal, boring USB stick
+    mode = MODE_KEYBOARD  # first-ever boot: ready to type immediately
 
 # --- optional manual override: hold MODE at power-on to flip ---
 mode_btn = digitalio.DigitalInOut(board.D0)
@@ -51,4 +48,4 @@ if mode == MODE_KEYBOARD:
     usb_cdc.disable()                           # hide the serial console too (optional)
     usb_hid.enable((usb_hid.Device.KEYBOARD,))  # expose a single HID keyboard
 else:
-    usb_hid.disable()                           # no HID; just the mass-storage drive
+    usb_hid.disable()                           # no HID; just the editable drive
