@@ -2,10 +2,16 @@
 
 Image many boards back-to-back. The script loops: flash one → unplug → plug next → repeat.
 
-- **Windows / PowerShell:** `flash-xiao.ps1` (primary)
-- **Linux / macOS:** `flash-xiao.sh`
+Pick whichever runtime you have — **all four behave identically** (same drive-by-label detection, same options, same loop):
 
-Both do the same two steps per board and default their payload source to the parent `hid-token/` folder (`boot.py`, `code.py`, `keys.txt`, `lib/`).
+| Script | Runtime | Platforms | Notes |
+|---|---|---|---|
+| `flash-xiao.py` | Python 3.6+ | Win / Linux / macOS | **Most portable** — stdlib only, no pip installs |
+| `flash-xiao.rs` | Rust (compiled) | Win / Linux / macOS | std only, zero crates; one static binary to carry |
+| `flash-xiao.ps1` | PowerShell | Windows | Fits a Windows-only box with nothing else installed |
+| `flash-xiao.sh` | bash | Linux / macOS | Fits a *nix box with nothing else installed |
+
+All default their payload source to the parent `hid-token/` folder (`boot.py`, `code.py`, `keys.txt`, `lib/`). The Python and Rust versions detect Windows drives via the Win32 API directly (no PowerShell dependency).
 
 ```
    per board:
@@ -30,7 +36,22 @@ Hold **B(OOT)**, tap **R(ESET)** (or plug in while holding BOOT). The `RPI-RP2` 
 
 ## Run it
 
-**Windows:**
+**Python (any OS — most portable):**
+```bash
+python3 flash-xiao.py --uf2 ./circuitpython-xiao-rp2040-9.2.1.uf2
+python3 flash-xiao.py --skip-firmware --keys ./lab-batch-A.txt --count 10
+# Windows: py flash-xiao.py --uf2 .\circuitpython-xiao-rp2040-9.2.1.uf2
+```
+
+**Rust (compile once, carry the binary):**
+```bash
+rustc -O flash-xiao.rs -o flash-xiao          # Windows: -o flash-xiao.exe
+./flash-xiao --uf2 ./circuitpython-xiao-rp2040-9.2.1.uf2
+./flash-xiao --skip-firmware --keys ./lab-batch-A.txt --count 10
+```
+> No `cargo`/crates needed — plain `rustc`. The Rust `--source` default is auto-detected (first of `.`, `..`, `../..` containing `boot.py`), so run it from `deploy/` or `hid-token/`, or pass `--source` explicitly.
+
+**Windows / PowerShell:**
 ```powershell
 # Flash firmware + payload, loop until Ctrl+C
 .\flash-xiao.ps1 -Uf2 .\adafruit-circuitpython-seeeduino_xiao_rp2040-9.2.1.uf2
